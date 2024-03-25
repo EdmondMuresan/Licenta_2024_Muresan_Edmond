@@ -1,0 +1,235 @@
+MyScreenManager:
+    Login:
+    Register:
+    MainPage:
+    CreateChatRoom:
+<Login>:
+    name:"login"
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:10
+        spacing: 25
+        orientation: 'vertical'
+        MDLabel:
+            id:welcome_label
+            text: "Welcome to Chatrise"
+            font_size:25
+            halign:"center"
+            color: "#AD7023"
+            font_name: 'Prototype.ttf'
+            size_hint_y:None
+            height: self.texture_size[1]
+            padding_y:15
+        MDTextField:
+            id:email
+            hint_text:"email"
+            icon_right:"account"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            helper_text: "user@gmail.com"
+            validator: "email"
+        MDTextField:
+            id:password
+            hint_text:"password"
+            icon_right:"onepassword"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            password:True
+        MDRoundFlatButton:
+            text:"Login"
+            font_size:12
+            pos_hint: {'center_x': 0.5}
+            on_release:
+                root.login()
+        MDRoundFlatButton:
+            text:"Register"
+            font_size:12
+            pos_hint: {'center_x': 0.5}
+            on_release:
+                app.root.current="register"
+<Register>:
+    name:"register"
+    id:register
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:50,20
+        spacing: 25
+        orientation: 'vertical'
+        MDTextField:
+            id:fullname
+            hint_text:"Full Name"
+            icon_right:"account-box"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        MDTextField:
+            id:email
+            hint_text:"email"
+            icon_right:"card-account-mail"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            helper_text: "user@gmail.com"
+            validator: "email"
+        MDTextField:
+            id:password
+            hint_text:"password"
+            icon_right:"onepassword"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            password:True
+        Image:
+            id:my_image
+            source:""
+        FileChooserIconView:
+            id:image_chooser
+            on_selection: register.selected(image_chooser.selection)
+        MDGridLayout:
+            cols:2
+            padding:20
+            spacing:20
+            MDRoundFlatButton:
+                text:"Back"
+                font_size:12
+                on_release:
+                    app.root.current="login"
+            MDRoundFlatButton:
+                text:"Register"
+                font_size:12
+                on_release:
+                    root.register()
+<MainPage>:
+    name:"main"
+    MDBoxLayout:
+        orientation:'vertical'
+        MDCard:
+            pos_hint:{"top":1}
+            size_hint:1,0.1
+            MDRoundFlatButton:
+                text:"Create Chat Room"
+                font_size:12
+                on_release:
+                    app.root.current="cchr"
+                pos_hint: {"right": 1,"center_y":0.5}
+            MDRoundFlatButton:
+                text:"Log out"
+                font_size:12
+                on_release:
+                    root.logout()
+                pos_hint: {"left": 1,"center_y":0.5}
+            MDRoundFlatButton:
+                text:"My Chat Rooms"
+                font_size:12
+                on_release:
+                    root.change_mine()
+                pos_hint: {"left": 0.5,"center_y":0.5}
+            MDRoundFlatButton:
+                text:"Explore"
+                font_size:12
+                on_release:
+                    root.change_not_mine()
+                pos_hint: {"left": 0.5,"center_y":0.5}
+            MDLabel:
+                id:user_button
+                text:""
+                pos_hint: {"left": 1,"center_y":0.5}
+            Image:
+                id:user_image
+                size_hint:0.2,1
+                pos_hint: {"left": 1,"center_y":0.5}
+        ScrollView:
+            id:event_box
+            size_hint:1,1
+<CreateChatRoom>:
+    name:"cchr"
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:10
+        spacing: 25
+        orientation: 'vertical'
+        MDLabel:
+            id:create_chat_room
+            text: "Create Chat room"
+            font_size:18
+            halign:"center"
+            color: "#AD7023"
+            font_name: 'Prototype.ttf'
+            size_hint_y:None
+            height: self.texture_size[1]
+        MDTextField:
+            id:event_name
+            hint_text:"Event Name"
+            icon_right:"human-capacity-increase"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        MDTextField:
+            id:event_nr
+            hint_text:"Number of participants(Numeric)"
+            icon_right:"family-tree"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            max_text_length: 2
+        MDTextField:
+            id:location
+            hint_text:"Location"
+            icon_right:"family-tree"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        Spinner:
+            id: theme_spinner
+            text: 'Select Theme'
+            values: []
+            size_hint:0.5,1
+            pos_hint:{'center_x': 0.5}
+        MDFloatLayout:
+            MDRaisedButton:
+                id:date
+                text:"2024.03.12"
+                font_size:12
+                pos_hint: {'center_x': 0.4,'center_y':0.5}
+                on_release:
+                    root.show_date_picker()
+            MDRaisedButton:
+                id:time
+                text:"12:00"
+                font_size:12
+                pos_hint: {'center_x': 0.6,'center_y':0.5}
+                on_release:
+                    root.show_time_picker()
+        MDFloatLayout:
+            MDRoundFlatButton:
+                text:"Back"
+                font_size:12
+                pos_hint: {'center_x': 0.1,'center_y':0.5}
+                on_release:
+                    app.root.current="main"
+            MDRoundFlatButton:
+                text:"Create Event"
+                font_size:12
+                pos_hint: {'center_x': 0.5,'center_y':0.5}
+                on_release:
+                    root.create_event()
+        
