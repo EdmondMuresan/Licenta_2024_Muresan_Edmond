@@ -1,16 +1,17 @@
 from mydb import ChatRiseDB
 from kivymd.app import MDApp
+from kivymd.uix.label import MDLabel
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.button import MDRoundFlatButton
 from kivymd.uix.screen import MDScreen
-from kivymd.uix.list import OneLineAvatarIconListItem, IconLeftWidget
-from kivymd.uix.list import MDList
+from kivymd.uix.list import OneLineAvatarIconListItem, IconLeftWidget ,ThreeLineRightIconListItem,MDList
 from kivy.lang import Builder
 from kivymd.uix.dialog import MDDialog
 from datetime import datetime
 from kivymd.uix.pickers import MDDatePicker,MDTimePicker
 from PIL import Image
 import io
+from kivy.clock import Clock
 user={}
 current_chat_room=None
 class AllertDialog():
@@ -33,6 +34,9 @@ class AllertDialog():
         self.dialog.dismiss()
 class EventDetails(AllertDialog):
     def show_info_dialog(self,title,info,event_id,user_id,use_case):
+        global current_chat_room
+        current_chat_room=event_id
+        print(event_id)
         if use_case=="join":
             self.dialog = MDDialog(
                 title=title,
@@ -70,11 +74,12 @@ class EventDetails(AllertDialog):
             )
         self.dialog.open()
     def change_room(self,event_id):
-        global current_chat_room
-        current_chat_room=event_id
+        print(event_id)
+        self.close_dialog
         app=MDApp.get_running_app()
         app.root.current="chatroom"
     def connect_to_event(self,event_id,user_id):
+        self.close_dialog
         if(db.connect_to_event(event_id,user_id,"join")):
             self.show_alert_dialog("Success")
         else:
@@ -105,7 +110,7 @@ class Register(MDScreen,AllertDialog):
             self.ids.my_image.source=filename[0]
             file=filename[0]
             if file[-3:] in ["jpg","png"]: 
-                print(filename[0])
+                pass
             else:
                 self.show_alert_dialog("Invalid image format!")
         except:
@@ -191,12 +196,14 @@ class MainPage(MDScreen,EventDetails):
             event_nr = int(event["event_nr"])
             event_date=event["event_date"]
             event_id=event["_id"]
+            print(event_name)
             if db.connect_to_event(event_id,user["_id"],"view")==type:
                 item = OneLineAvatarIconListItem(
                     IconLeftWidget(icon="human-capacity-increase"),
-                    on_release=lambda x, eventid=event_id,loc=event_location, theme=event_theme, date=event_date, time=event_time, nr=event_nr, name=event_name: self.show_info_dialog(f"{name} ~~ Event details", f" Location:{loc} \n Theme:{theme} \n Date:{date} Time:{time} \n Available slots: {nr-len(event['participants'])}",event_id,user["_id"],use_case),
+                    on_release=lambda x, eventid=event_id,loc=event_location, theme=event_theme, date=event_date, time=event_time, nr=event_nr, name=event_name: self.show_info_dialog(f"{name} ~~ Event details", f" Location:{loc} \n Theme:{theme} \n Date:{date} Time:{time} \n Available slots: {nr-len(event['participants'])}" ,eventid,user["_id"],use_case),
                     text=f"{event['event_name']} {event['event_date']}"
                 )
+                print(event_name)
                 list_view.add_widget(item)
         self.ids.event_box.add_widget(list_view)
     def change_mine(self):
@@ -207,6 +214,54 @@ class MainPage(MDScreen,EventDetails):
         self.load_events(True,"join")	
     def on_leave(self, *args):
         self.ids.event_box.clear_widgets()
+
+
+class ChatRoom(MDScreen, EventDetails):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.printed_messages = set()
+    
+    def on_enter(self):
+        self.start_message_update()     
+    
+    def start_message_update(self):
+        Clock.schedule_interval(self.print_messages_periodically, 2)
+        
+    def print_messages_periodically(self,dt):
+        messages = db.get_messages(current_chat_room)
+        
+        for message in messages:
+            message_key = (message['userid'], message['message'], message['timestamp'])
+            if message_key not in self.printed_messages:
+                self.print_message(message['message'], message['timestamp'], message['userid'])
+                self.printed_messages.add(message_key)
+                
+    def print_message(self, message, timestamp, userid):
+        self.ids.chat_list.add_widget(
+            MDLabel(
+                text=str(timestamp)+" "+str(userid),
+                size_hint=(0.5, None),
+                halign="right" if userid == user["_id"] else "left", 
+            ))
+        self.ids.chat_list.add_widget(
+            MDLabel(
+                text= "You: "+message if userid == user["_id"] else message, 
+                halign="right" if userid == user["_id"] else "left", 
+                size_hint=(1, None),
+                ),
+        )
+        print(message)        
+        
+    def send_message(self):
+        global current_chat_room
+        text = self.ids.chatbox.text
+        self.ids.chatbox.text = ""
+        db.insert_message(user["_id"], current_chat_room, text)
+        
+    def on_leave(self, *args):
+        self.printed_messages = set()
+        self.ids.chat_list.clear_widgets()
+        Clock.unschedule(self.print_messages_periodically)
 class MyScreenManager(MDScreenManager):
     pass
 class ChatRiseApp(MDApp):

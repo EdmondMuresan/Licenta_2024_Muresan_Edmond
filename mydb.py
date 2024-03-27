@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import bcrypt
 import io 
 from PIL import Image
+from datetime import datetime
 class ChatRiseDB:
     client = MongoClient("localhost", 27017) 
     db = client.chatrise
@@ -42,7 +43,8 @@ class ChatRiseDB:
             "event_theme":event_theme,
             "event_date":event_date,
             "event_time":event_time,
-            "participants":[]
+            "participants":[],
+            "messages":[]
         })
     def get_events(self):
         events=ChatRiseDB.events.find()
@@ -59,3 +61,12 @@ class ChatRiseDB:
             return True
         else:
             return True
+    def insert_message(self,userid,eventid,message):
+        timestamp = datetime.now()
+        ChatRiseDB.events.update_one(
+        {"_id": eventid},
+        {"$push": {"messages": {"userid": userid, "message": message, "timestamp": timestamp}}}
+    )
+    def get_messages(self,eventid):
+        messages=ChatRiseDB.events.find_one({"_id":eventid})["messages"]
+        return messages
