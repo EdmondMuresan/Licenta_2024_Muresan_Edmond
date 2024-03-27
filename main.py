@@ -2,7 +2,7 @@ from mydb import ChatRiseDB
 from kivymd.app import MDApp
 from kivymd.uix.label import MDLabel
 from kivymd.uix.screenmanager import MDScreenManager
-from kivymd.uix.button import MDRoundFlatButton
+from kivymd.uix.button import MDRoundFlatButton,MDFillRoundFlatButton
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.list import OneLineAvatarIconListItem, IconLeftWidget ,ThreeLineRightIconListItem,MDList
 from kivy.lang import Builder
@@ -66,6 +66,11 @@ class EventDetails(AllertDialog):
                         on_release=lambda x, event_id=event_id, user_id=user_id: self.change_room(event_id))
                 ,
                 MDRoundFlatButton(
+                        text="Leave chat room",
+                        text_color=(240, 20, 20, 1),
+                        on_release = lambda x, event_id=event_id, user_id=user_id: self.leave_room(event_id,user_id)
+                        ),
+                MDRoundFlatButton(
                         text="Cancel",
                         text_color=(240, 20, 20, 1),
                         on_release = self.close_dialog
@@ -84,6 +89,10 @@ class EventDetails(AllertDialog):
             self.show_alert_dialog("Success")
         else:
             self.show_alert_dialog("Error")
+    def leave_room(self,event_id,user_id):
+        self.close_dialog
+        db.leave_event(event_id,user_id)
+        self.show_alert_dialog("Chat room left!")
 class Register(MDScreen,AllertDialog):
     dialog=None
     def register(self):
@@ -238,16 +247,13 @@ class ChatRoom(MDScreen, EventDetails):
                 
     def print_message(self, message, timestamp, userid):
         self.ids.chat_list.add_widget(
-            MDLabel(
-                text=str(timestamp)+" "+str(userid),
-                size_hint=(0.5, None),
-                halign="right" if userid == user["_id"] else "left", 
-            ))
-        self.ids.chat_list.add_widget(
-            MDLabel(
-                text= "You: "+message if userid == user["_id"] else message, 
-                halign="right" if userid == user["_id"] else "left", 
-                size_hint=(1, None),
+            MDFillRoundFlatButton(
+                text= "You: "+message if userid == user["_id"] else db.get_user_name(userid)+": "+message, 
+                pos_hint={'right': 1.0, 'y': 1.0} if userid == user["_id"] else {'left': 1.0, 'y': 1.0},
+                size_hint=(0.5, 1),
+                md_bg_color= "black" if userid == user["_id"] else "orange",
+                theme_text_color="Custom",
+                text_color= "orange" if userid == user["_id"] else "black",
                 ),
         )
         print(message)        

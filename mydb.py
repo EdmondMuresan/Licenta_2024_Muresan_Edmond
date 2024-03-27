@@ -32,7 +32,6 @@ class ChatRiseDB:
             return False
     def getinfo(self,email):
         user = ChatRiseDB.users.find_one({"email": email})
-        print(user)
         return user
     def insert_event(self, userid,event_name,event_nr,event_location,event_theme,event_date,event_time):
         ChatRiseDB.events.insert_one({
@@ -70,3 +69,8 @@ class ChatRiseDB:
     def get_messages(self,eventid):
         messages=ChatRiseDB.events.find_one({"_id":eventid})["messages"]
         return messages
+    def leave_event(self,eventid,userid):
+        ChatRiseDB.events.update_one({"_id":eventid},{"$pull":{"participants":{"participantid":userid}}})
+    def get_user_name(self,userid):
+        user=ChatRiseDB.users.find_one({"_id":userid})
+        return user["fullname"]
