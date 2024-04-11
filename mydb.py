@@ -74,3 +74,21 @@ class ChatRiseDB:
     def get_user_name(self,userid):
         user=ChatRiseDB.users.find_one({"_id":userid})
         return user["fullname"]
+    def delete_user(self,userid):
+        ChatRiseDB.users.delete_one({"_id":userid})
+        for event in ChatRiseDB.events.find():
+            if event["userid"]==userid:
+                ChatRiseDB.events.delete_one({"_id":event["_id"]})
+            for participant in event["participants"]:
+                if participant["participantid"]==userid:
+                    ChatRiseDB.events.update_one({"_id":event["_id"]},{"$pull":{"participants":{"participantid":userid}}})
+    def check_password(self,id,password):
+        user=ChatRiseDB.users.find_one({"_id":id})
+        if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+            return True
+        else:
+            return False
+    def update_user(self,userid,fullname,email,image_file):
+        with open(image_file, 'rb') as f:
+            image_data = f.read()  
+        ChatRiseDB.users.update_one({"_id":userid},{"$set":{"fullname":fullname,"email":email,"image":image_data}})

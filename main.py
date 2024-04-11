@@ -23,7 +23,7 @@ class AllertDialog():
             buttons=[
                 MDRoundFlatButton(
                     text="Ok",
-                    text_color=(240, 20, 20, 1),
+                    text_color="orange",
                     on_release = self.close_dialog
                     ),
                 ]
@@ -44,12 +44,13 @@ class EventDetails(AllertDialog):
                 buttons=[
                     MDRoundFlatButton(
                         text="Join",
-                        text_color=(240, 20, 20, 1),
+                        theme_text_color= "Custom",
+                        text_color="orange",
                         on_release=lambda x, event_id=event_id, user_id=user_id: self.connect_to_event(event_id, user_id)
                     ),
                     MDRoundFlatButton(
                         text="Cancel",
-                        text_color=(240, 20, 20, 1),
+                        text_color="orange",
                         on_release = self.close_dialog
                         )
                 ]
@@ -62,17 +63,17 @@ class EventDetails(AllertDialog):
             buttons=[    
                 MDRoundFlatButton(
                         text="Enter",
-                        text_color=(240, 20, 20, 1),
+                        text_color="orange",
                         on_release=lambda x, event_id=event_id, user_id=user_id: self.change_room(event_id))
                 ,
                 MDRoundFlatButton(
                         text="Leave chat room",
-                        text_color=(240, 20, 20, 1),
+                        text_color="orange",
                         on_release = lambda x, event_id=event_id, user_id=user_id: self.leave_room(event_id,user_id)
                         ),
                 MDRoundFlatButton(
                         text="Cancel",
-                        text_color=(240, 20, 20, 1),
+                        text_color="orange",
                         on_release = self.close_dialog
                         )
                 ]
@@ -126,20 +127,40 @@ class Register(MDScreen,AllertDialog):
             pass
 class Login(MDScreen,AllertDialog):
     dialog=None
+    def on_enter(self):
+        print("ENtering login")
+        with open("user_data.txt","r") as file:
+            data=file.read()
+            if data:
+                split_data=data.split(" ")
+                if(db.login_user(split_data[0],split_data[1])):
+                    global user
+                    app=MDApp.get_running_app()
+                    app.root.current="main"
+                    user=db.getinfo(split_data[0])
+                    print(str(user)+"Welcome")
+                
     def login(self):
         global user
         email=self.ids.email.text
         password=self.ids.password.text
         self.ids.email.text=""
         self.ids.password.text=""
+        checkbox=self.ids.remember_me
         if(db.login_user(email,password)):
+            
             app=MDApp.get_running_app()
             app.root.current="main"
             user=db.getinfo(email)
+            if checkbox.active:self.save_user_data(email,password)
             print(str(user)+"Welcome")
-            
+                
         else:
             self.show_alert_dialog("Invalid credentials!")
+    def save_user_data(self,email,password):
+        with open("user_data.txt","a") as file:
+            data=str(email+ " " +password)
+            file.write(data)   
 class CreateChatRoom(MDScreen,AllertDialog):
     dialog=None
     def on_pre_enter(self, *args):
@@ -184,12 +205,13 @@ class MainPage(MDScreen,EventDetails):
     def logout(self):
         global user
         user={}
+        with open("user_data.txt","w") as file:
+            file.write("")
         app=MDApp.get_running_app()
         app.root.current="login"
-        print(user)
     def on_enter(self):
         global user
-        self.ids.user_button.text="Welcome"+" "+str(user["fullname"])
+        self.ids.user_spinner.text=str(user["fullname"])
         image = Image.open(io.BytesIO(user['image']))
         image.save('user.png')
         self.ids.user_image.source="user.png"
@@ -223,8 +245,18 @@ class MainPage(MDScreen,EventDetails):
         self.load_events(True,"join")	
     def on_leave(self, *args):
         self.ids.event_box.clear_widgets()
-
-
+    def user_action(self,action):
+        if action=="Logout":
+            self.logout()
+        if action=="Delete User":
+            self.delete_user()
+        if action=="Edit User":
+            app=MDApp.get_running_app()
+            app.root.current="edituser"
+    def delete_user(self):
+        db.delete_user(user["_id"])
+        self.show_alert_dialog("User deleted!")
+        self.logout()
 class ChatRoom(MDScreen, EventDetails):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -268,6 +300,23 @@ class ChatRoom(MDScreen, EventDetails):
         self.printed_messages = set()
         self.ids.chat_list.clear_widgets()
         Clock.unschedule(self.print_messages_periodically)
+class WelcomeScreen(MDScreen):
+    pass
+class EditUser(MainPage,Register):
+    global user
+    def on_enter(self):
+        self.ids.fullname.text=user["fullname"]
+        self.ids.email.text=user["email"]
+        self.ids.my_image.source="user.png"
+    def edit_user(self):
+        if(db.check_password(user["_id"],self.ids.password.text)):
+            fullname=self.ids.fullname.text
+            email=self.ids.email.text
+            image=self.ids.my_image.source
+            db.update_user(user["_id"],fullname,email,image)
+            self.logout()
+        else:
+            self.show_alert_dialog("Wrong password!")
 class MyScreenManager(MDScreenManager):
     pass
 class ChatRiseApp(MDApp):
@@ -276,7 +325,6 @@ class ChatRiseApp(MDApp):
         self.theme_cls.primary_palette="Orange"
         return Builder.load_file("chatrise.kv")
     
-
 db=ChatRiseDB()
 demo_app = ChatRiseApp()
 demo_app.run()

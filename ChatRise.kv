@@ -1,9 +1,36 @@
 MyScreenManager:
+    WelcomeScreen:
     Login:
     Register:
     MainPage:
     CreateChatRoom:
     ChatRoom:
+    EditUser:
+<WelcomeScreen>:
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:10
+        spacing: 25
+        orientation: 'vertical'
+        MDLabel:
+            text: "Welcome to Chatrise"
+            font_size:25
+            halign:"center"
+            color: "#AD7023"
+            font_name: 'Prototype.ttf'
+            size_hint_y:None
+            height: self.texture_size[1]
+            padding_y:15
+
+        MDRoundFlatButton:
+            text:"Continue"
+            font_size:12
+            pos_hint: {'center_x': 0.5}
+            on_release:
+                app.root.current="login"
 <Login>:
     name:"login"
     MDCard:
@@ -14,47 +41,59 @@ MyScreenManager:
         padding:10
         spacing: 25
         orientation: 'vertical'
-        MDLabel:
-            id:welcome_label
-            text: "Welcome to Chatrise"
-            font_size:25
-            halign:"center"
-            color: "#AD7023"
-            font_name: 'Prototype.ttf'
-            size_hint_y:None
-            height: self.texture_size[1]
-            padding_y:15
-        MDTextField:
-            id:email
-            hint_text:"email"
-            icon_right:"account"
-            size_hint_x:None
-            width: 200
-            font_size:18
-            pos_hint: {'center_x': 0.5}
-            helper_text: "user@gmail.com"
-            validator: "email"
-        MDTextField:
-            id:password
-            hint_text:"password"
-            icon_right:"onepassword"
-            size_hint_x:None
-            width: 200
-            font_size:18
-            pos_hint: {'center_x': 0.5}
-            password:True
-        MDRoundFlatButton:
-            text:"Login"
-            font_size:12
-            pos_hint: {'center_x': 0.5}
-            on_release:
-                root.login()
-        MDRoundFlatButton:
-            text:"Register"
-            font_size:12
-            pos_hint: {'center_x': 0.5}
-            on_release:
-                app.root.current="register"
+        MDBoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            MDLabel:
+                id:welcome_label
+                text: "Welcome to Chatrise"
+                font_size:25
+                halign:"center"
+                color: "#AD7023"
+                font_name: 'Prototype.ttf'
+                size_hint_y:None
+                height: self.texture_size[1]
+                padding_y:15
+            MDTextField:
+                id:email
+                hint_text:"email"
+                icon_right:"account"
+                size_hint_x:None
+                width: 200
+                font_size:18
+                pos_hint: {'center_x': 0.5}
+                helper_text: "user@gmail.com"
+                validator: "email"
+            MDTextField:
+                id:password
+                hint_text:"password"
+                icon_right:"onepassword"
+                size_hint_x:None
+                width: 200
+                font_size:18
+                pos_hint: {'center_x': 0.5}
+                password:True
+            MDBoxLayout:
+                ssize_hint:0.2,0.2
+                MDLabel:
+                    pos_hint: {'center_x': 1,'center_y': 0.5}
+                    text:"Remember me"
+                MDCheckbox:
+                    id:remember_me
+                    pos_hint: {'center_x': 1,'center_y': 0.5}
+
+            MDRoundFlatButton:
+                text:"Login"
+                font_size:12
+                pos_hint: {'center_x': 0.5}
+                on_release:
+                    root.login()
+            MDRoundFlatButton:
+                text:"Register"
+                font_size:12
+                pos_hint: {'center_x': 0.5}
+                on_release:
+                    app.root.current="register"
 <Register>:
     name:"register"
     id:register
@@ -127,12 +166,6 @@ MyScreenManager:
                     app.root.current="cchr"
                 pos_hint: {"right": 1,"center_y":0.5}
             MDRoundFlatButton:
-                text:"Log out"
-                font_size:12
-                on_release:
-                    root.logout()
-                pos_hint: {"left": 1,"center_y":0.5}
-            MDRoundFlatButton:
                 text:"My Chat Rooms"
                 font_size:12
                 on_release:
@@ -144,10 +177,14 @@ MyScreenManager:
                 on_release:
                     root.change_not_mine()
                 pos_hint: {"left": 0.5,"center_y":0.5}
-            MDLabel:
-                id:user_button
-                text:""
-                pos_hint: {"left": 1,"center_y":0.5}
+            Spinner:
+                id: user_spinner
+                text: ''
+                values: ["Logout","Edit User","Delete User"] 
+                size_hint:0.1,1
+                pos_hint:{"right": 1,"center_y":0.5}
+                background_color: 1,0.7,0,1
+                on_text: root.user_action(user_spinner.text)
             Image:
                 id:user_image
                 size_hint:0.2,1
@@ -260,3 +297,60 @@ MyScreenManager:
                 height: self.minimum_height
                 padding: 30
                 spacing: 10
+<EditUser>:
+    name:"edituser"
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:50,20
+        spacing: 25
+        orientation: 'vertical'
+        MDTextField:
+            id:fullname
+            hint_text:"Full Name"
+            icon_right:"account-box"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        MDTextField:
+            id:email
+            hint_text:"email"
+            icon_right:"card-account-mail"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            helper_text: "user@gmail.com"
+            validator: "email"
+        MDTextField:
+            id:password
+            hint_text:"password"
+            icon_right:"onepassword"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            password:True
+        Image:
+            id:my_image
+            source:""
+        FileChooserIconView:
+            id:image_chooser
+            on_selection: root.selected(image_chooser.selection)
+        MDGridLayout:
+            cols:2
+            padding:20
+            spacing:20
+            MDRoundFlatButton:
+                text:"Back"
+                font_size:12
+                on_release:
+                    app.root.current="main"
+            MDRoundFlatButton:
+                text:"Save Changes"
+                font_size:12
+                on_release:
+                    root.edit_user()
