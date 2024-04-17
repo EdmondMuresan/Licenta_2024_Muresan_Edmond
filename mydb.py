@@ -92,3 +92,20 @@ class ChatRiseDB:
         with open(image_file, 'rb') as f:
             image_data = f.read()  
         ChatRiseDB.users.update_one({"_id":userid},{"$set":{"fullname":fullname,"email":email,"image":image_data}})
+    def get_members(self,eventid):
+        members=ChatRiseDB.events.find_one({"_id":eventid})["participants"]
+        membernames=[]
+        for member in members:
+            member["participantid"]=ChatRiseDB.users.find_one({"_id":member["participantid"]})["fullname"]
+            membernames.append(member["participantid"])
+        membernames.append(ChatRiseDB.users.find_one({"_id":ChatRiseDB.events.find_one({"_id":eventid})["userid"]})["fullname"])
+        membernames.append("Leave") 
+        return membernames
+    def leave_event(self,eventid,userid):
+        ChatRiseDB.events.update_one({"_id":eventid},{"$pull":{"participants":{"participantid":userid}}})
+    def admin_status(self,userid,eventid):
+        event=ChatRiseDB.events.find_one({"_id":eventid})
+        if event["userid"]==userid:
+            return True
+        else:
+            return False

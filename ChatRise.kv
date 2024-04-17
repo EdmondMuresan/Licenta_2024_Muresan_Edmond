@@ -177,6 +177,19 @@ MyScreenManager:
                 on_release:
                     root.change_not_mine()
                 pos_hint: {"left": 0.5,"center_y":0.5}
+            
+            Spinner:
+                id: event_filter_spinner
+                text: 'Choose Event Filter'
+                values: ["Sport", "Outdoor", "Gaming", "Meetup", "Studies","Choose Event Filter"] 
+                size_hint:0.2,1
+                pos_hint:{"right": 1,"center_y":0.5}
+                background_color: 1,0.7,0,1
+                on_text: root.filter_action(event_filter_spinner.text)
+            Image:
+                id:user_image
+                size_hint:0.2,1
+                pos_hint: {"left": 1,"center_y":0.5}
             Spinner:
                 id: user_spinner
                 text: ''
@@ -185,10 +198,6 @@ MyScreenManager:
                 pos_hint:{"right": 1,"center_y":0.5}
                 background_color: 1,0.7,0,1
                 on_text: root.user_action(user_spinner.text)
-            Image:
-                id:user_image
-                size_hint:0.2,1
-                pos_hint: {"left": 1,"center_y":0.5}
         ScrollView:
             id:event_box
             size_hint:1,1
@@ -279,6 +288,14 @@ MyScreenManager:
             pos_hint: {'top':1,'left':1}
             on_release:
                 app.root.current="main"
+        Spinner:
+            id:members
+            text: 'See members'
+            values: []
+            size_hint:0.2,0.1
+            pos_hint:{"right": 0.8,"top":1}
+            background_color: 1,0.7,0,1
+            on_text: root.manage_members(members.text)
         MDTextField:
             id:chatbox
             pos_hint:{"bottom":1}

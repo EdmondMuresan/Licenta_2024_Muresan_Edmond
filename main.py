@@ -29,9 +29,30 @@ class AllertDialog():
                 ]
             )
         self.dialog.open()
-    
+    def kick_dialog(self,info,event_id,user_id):
+        self.dialog = MDDialog(
+            title="Caution!",
+            text="Would you like to kick "+info,
+            buttons=[
+                MDRoundFlatButton
+                (
+                    text="Yes",
+                    text_color="orange",
+                    on_release = lambda x, event_id=event_id, user_id=user_id:self.kick(user_id,event_id)
+                ),
+                MDRoundFlatButton
+                (
+                    text="Cancel",
+                    text_color="orange",
+                    on_release = self.close_dialog
+                )
+            ]
+        )
+        self.dialog.open()
     def close_dialog(self,obj):
         self.dialog.dismiss()
+    def kick(self,info,event_id):
+        db.leave_event(event_id,info)
 class EventDetails(AllertDialog):
     def show_info_dialog(self,title,info,event_id,user_id,use_case):
         global current_chat_room
@@ -202,6 +223,9 @@ class CreateChatRoom(MDScreen,AllertDialog):
             app.root.current="main"
             self.show_alert_dialog("Event created!")
 class MainPage(MDScreen,EventDetails):
+    event_filter='Choose Event Filter'
+    event_status=None
+    event_attending=None
     def logout(self):
         global user
         user={}
@@ -216,7 +240,7 @@ class MainPage(MDScreen,EventDetails):
         image.save('user.png')
         self.ids.user_image.source="user.png"
         self.load_events(True,"join")	
-    def load_events(self,type,use_case):
+    def load_events(self,type,use_case,filter="Choose Event Filter"):
         events=db.get_events()
         list_view = MDList()
         for event in events:
@@ -227,22 +251,40 @@ class MainPage(MDScreen,EventDetails):
             event_nr = int(event["event_nr"])
             event_date=event["event_date"]
             event_id=event["_id"]
-            print(event_name)
-            if db.connect_to_event(event_id,user["_id"],"view")==type:
-                item = OneLineAvatarIconListItem(
-                    IconLeftWidget(icon="human-capacity-increase"),
-                    on_release=lambda x, eventid=event_id,loc=event_location, theme=event_theme, date=event_date, time=event_time, nr=event_nr, name=event_name: self.show_info_dialog(f"{name} ~~ Event details", f" Location:{loc} \n Theme:{theme} \n Date:{date} Time:{time} \n Available slots: {nr-len(event['participants'])}" ,eventid,user["_id"],use_case),
-                    text=f"{event['event_name']} {event['event_date']}"
-                )
-                print(event_name)
-                list_view.add_widget(item)
+            event_creator=db.get_user_name(event["userid"])
+            if filter=="Choose Event Filter":
+                if db.connect_to_event(event_id,user["_id"],"view")==type:
+                    item = OneLineAvatarIconListItem(
+                        IconLeftWidget(icon="human-capacity-increase"),
+                        on_release=lambda x, eventid=event_id,loc=event_location, theme=event_theme, date=event_date, time=event_time, nr=event_nr, name=event_name: self.show_info_dialog(f"{name} ~~ Event details", f" Location:{loc} \n Theme:{theme} \n Date:{date} Time:{time} \n Available slots: {nr}/{nr-len(event['participants'])}" ,eventid,user["_id"],use_case),
+                        
+                        text=f"{event['event_name']} {event['event_date']} {event['event_time']} \n Event by {event_creator}",
+                    )
+                    print(event_name)
+                    list_view.add_widget(item)
+            elif filter==event_theme:
+                if db.connect_to_event(event_id,user["_id"],"view")==type:
+                    item = OneLineAvatarIconListItem(
+                        
+                        IconLeftWidget(icon="human-capacity-increase"),
+                        on_release=lambda x, eventid=event_id,loc=event_location, theme=event_theme, date=event_date, time=event_time, nr=event_nr, name=event_name: self.show_info_dialog(f"{name} ~~ Event details", f" Location:{loc} \n Theme:{theme} \n Date:{date} Time:{time} \n Available slots: {nr}/{nr-len(event['participants'])}" ,eventid,user["_id"],use_case),
+                        
+                        text=f"{event['event_name']} {event['event_date']} {event['event_time']} \n Event by {event_creator}",
+
+                    )
+                    print(event_name)
+                    list_view.add_widget(item)
         self.ids.event_box.add_widget(list_view)
     def change_mine(self):
         self.ids.event_box.clear_widgets()
-        self.load_events(False,"message")
+        self.load_events(False,"message",self.event_filter)
+        self.event_status=False
+        self.event_attending="message"
     def change_not_mine(self):
         self.ids.event_box.clear_widgets()
-        self.load_events(True,"join")	
+        self.load_events(True,"join",self.event_filter)	
+        self.event_status=True
+        self.event_attending="join"
     def on_leave(self, *args):
         self.ids.event_box.clear_widgets()
     def user_action(self,action):
@@ -253,6 +295,21 @@ class MainPage(MDScreen,EventDetails):
         if action=="Edit User":
             app=MDApp.get_running_app()
             app.root.current="edituser"
+    def filter_action(self,actionname):
+        if actionname=="Sport":
+            self.event_filter="Sport"
+        if actionname=="Outdoor":
+            self.event_filter="Outdoor"
+        if actionname=="Gaming":
+            self.event_filter="Gaming"
+        if actionname=="Meetup":
+            self.event_filter="Meetup"
+        if actionname=="Studies":
+            self.event_filter="Studies"
+        if actionname=="Choose Event Filter":
+            self.event_filter="Choose Event Filter"
+        self.ids.event_box.clear_widgets()
+        self.load_events(self.event_status,self.event_attending,self.event_filter)
     def delete_user(self):
         db.delete_user(user["_id"])
         self.show_alert_dialog("User deleted!")
@@ -263,8 +320,9 @@ class ChatRoom(MDScreen, EventDetails):
         self.printed_messages = set()
     
     def on_enter(self):
-        self.start_message_update()     
-    
+        self.start_message_update()
+        self.ids.members.values = []
+        self.ids.members.values = db.get_members(current_chat_room)    
     def start_message_update(self):
         Clock.schedule_interval(self.print_messages_periodically, 2)
         
@@ -289,7 +347,14 @@ class ChatRoom(MDScreen, EventDetails):
                 ),
         )
         print(message)        
-        
+    def manage_members(self,action):
+        if action=="Leave":
+            db.leave_event(current_chat_room,user["_id"]) 
+            app=MDApp.get_running_app()
+            app.root.current="main"
+        elif db.admin_status(user["_id"],current_chat_room):
+            self.kick_dialog(db.get_user_name(user["_id"]),current_chat_room,user["_id"])
+              
     def send_message(self):
         global current_chat_room
         text = self.ids.chatbox.text
