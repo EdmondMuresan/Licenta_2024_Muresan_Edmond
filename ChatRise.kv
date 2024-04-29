@@ -282,20 +282,30 @@ MyScreenManager:
 <ChatRoom>:
     name:"chatroom"
     MDFloatLayout:
-        MDRoundFlatButton:
-            text:"Back"
-            font_size:12
-            pos_hint: {'top':1,'left':1}
-            on_release:
-                app.root.current="main"
-        Spinner:
-            id:members
-            text: 'See members'
-            values: []
-            size_hint:0.2,0.1
-            pos_hint:{"right": 0.8,"top":1}
-            background_color: 1,0.7,0,1
-            on_text: root.manage_members(members.text)
+        MDCard:
+            pos_hint:{"top":1}
+            size_hint:1,0.1
+            spacing:10
+            MDRoundFlatButton:
+                text:"Back"
+                font_size:12
+                pos_hint: {'left':1,"center_x":1}
+                size_hint:0.2,1
+                on_release:
+                    app.root.current="main"
+            MDLabel:
+                id:event_text
+                font_size:20
+                text:
+                pos_hint: { "center_x":1}
+            Spinner:
+                id:members
+                text: 'See members'
+                values: []
+                size_hint:0.5,1
+                pos_hint:{"right": 1,"center_x":1}
+                background_color: 1,0.7,0,1
+                on_text: root.manage_members(members.text)
         MDTextField:
             id:chatbox
             pos_hint:{"bottom":1}

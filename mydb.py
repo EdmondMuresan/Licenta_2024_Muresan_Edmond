@@ -94,13 +94,14 @@ class ChatRiseDB:
         ChatRiseDB.users.update_one({"_id":userid},{"$set":{"fullname":fullname,"email":email,"image":image_data}})
     def get_members(self,eventid):
         members=ChatRiseDB.events.find_one({"_id":eventid})["participants"]
-        membernames=[]
+        member_elements={}
         for member in members:
-            member["participantid"]=ChatRiseDB.users.find_one({"_id":member["participantid"]})["fullname"]
-            membernames.append(member["participantid"])
-        membernames.append(ChatRiseDB.users.find_one({"_id":ChatRiseDB.events.find_one({"_id":eventid})["userid"]})["fullname"])
-        membernames.append("Leave") 
-        return membernames
+            member_name=ChatRiseDB.users.find_one({"_id":member["participantid"]})["fullname"]
+            member_elements[member["participantid"]]=member_name
+        member_elements[ChatRiseDB.events.find_one({"_id":eventid})["userid"]]=self.get_user_name(ChatRiseDB.events.find_one({"_id":eventid})["userid"])
+        
+        print(member_elements)
+        return member_elements
     def leave_event(self,eventid,userid):
         ChatRiseDB.events.update_one({"_id":eventid},{"$pull":{"participants":{"participantid":userid}}})
     def admin_status(self,userid,eventid):
@@ -109,3 +110,9 @@ class ChatRiseDB:
             return True
         else:
             return False
+    def get_event_info(self,event_id):
+        event=ChatRiseDB.events.find_one({"_id":event_id})
+        return event
+    def delete_event(self,event_id):
+        ChatRiseDB.events.delete_one({"_id":event_id})
+        print("Event Deleted")
