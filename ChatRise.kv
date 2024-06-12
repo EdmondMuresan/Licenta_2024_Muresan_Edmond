@@ -6,6 +6,7 @@ MyScreenManager:
     CreateChatRoom:
     ChatRoom:
     EditUser:
+    EditEvent:
 <WelcomeScreen>:
     MDCard:
         size_hint: None,None
@@ -293,6 +294,13 @@ MyScreenManager:
                 size_hint:0.2,1
                 on_release:
                     app.root.current="main"
+            MDRoundFlatButton:
+                text:"Edit Event"
+                font_size:12
+                pos_hint: {'left':1,"center_x":1}
+                size_hint:0.2,1
+                on_release:
+                    app.root.current="editevent"
             MDLabel:
                 id:event_text
                 font_size:20
@@ -309,9 +317,14 @@ MyScreenManager:
         MDTextField:
             id:chatbox
             pos_hint:{"bottom":1}
-            size_hint:1,0.1
-            icon_right:"send"
+            size_hint:0.9,0.1
             on_text_validate:
+                root.send_message()
+        MDIconButton:
+            pos_hint:{"bottom":1,"right":1}	
+            size_hint:0.1,0.1
+            icon: "send"
+            on_release:
                 root.send_message()
         ScrollView:
             id: chat_field
@@ -381,3 +394,81 @@ MyScreenManager:
                 font_size:12
                 on_release:
                     root.edit_user()
+<EditEvent>:
+    name:"editevent"
+    MDCard:
+        size_hint: None,None
+        size: min(root.width * 0.8, root.height * 0.8), min(root.width * 0.9, root.height * 0.9)
+        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+        elevation:10
+        padding:10
+        spacing: 25
+        orientation: 'vertical'
+        MDLabel:
+            id:create_chat_room
+            text: "Create Chat room"
+            font_size:18
+            halign:"center"
+            color: "#AD7023"
+            font_name: 'Prototype.ttf'
+            size_hint_y:None
+            height: self.texture_size[1]
+        MDTextField:
+            id:event_name
+            hint_text:"Event Name"
+            icon_right:"human-capacity-increase"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        MDTextField:
+            id:event_nr
+            hint_text:"Number of participants(Numeric)"
+            icon_right:"family-tree"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+            max_text_length: 2
+        MDTextField:
+            id:location
+            hint_text:"Location"
+            icon_right:"family-tree"
+            size_hint_x:None
+            width: 200
+            font_size:18
+            pos_hint: {'center_x': 0.5}
+        Spinner:
+            id: theme_spinner
+            text: 'Select Theme'
+            values: []
+            size_hint:0.5,1
+            pos_hint:{'center_x': 0.5}
+        MDFloatLayout:
+            MDRaisedButton:
+                id:date
+                text:"2024.03.12"
+                font_size:12
+                pos_hint: {'center_x': 0.4,'center_y':0.5}
+                on_release:
+                    root.show_date_picker()
+            MDRaisedButton:
+                id:time
+                text:"12:00"
+                font_size:12
+                pos_hint: {'center_x': 0.6,'center_y':0.5}
+                on_release:
+                    root.show_time_picker()
+        MDFloatLayout:
+            MDRoundFlatButton:
+                text:"Back"
+                font_size:12
+                pos_hint: {'center_x': 0.1,'center_y':0.5}
+                on_release:
+                    app.root.current="main"
+            MDRoundFlatButton:
+                text:"Save Modifications"
+                font_size:12
+                pos_hint: {'center_x': 0.5,'center_y':0.5}
+                on_release:
+                    root.save_event()

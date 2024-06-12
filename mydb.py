@@ -98,7 +98,7 @@ class ChatRiseDB:
         for member in members:
             member_name=ChatRiseDB.users.find_one({"_id":member["participantid"]})["fullname"]
             member_elements[member["participantid"]]=member_name
-        member_elements[ChatRiseDB.events.find_one({"_id":eventid})["userid"]]=self.get_user_name(ChatRiseDB.events.find_one({"_id":eventid})["userid"])
+        member_elements[ChatRiseDB.events.find_one({"_id":eventid})["userid"]]=self.get_user_name(ChatRiseDB.events.find_one({"_id":eventid})["userid"])+"  Admin"
         
         print(member_elements)
         return member_elements

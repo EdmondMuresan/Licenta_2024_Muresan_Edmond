@@ -14,6 +14,7 @@ import io
 from kivy.clock import Clock
 user={}
 current_chat_room=None
+reload=None
 class AllertDialog():
     dialog=None
     def show_alert_dialog(self,info):
@@ -38,7 +39,7 @@ class AllertDialog():
                     (
                         text="Yes",
                         text_color="orange",
-                        on_release = lambda x, event_id=event_id, user_id=user_id:self.kick(user_id,event_id)
+                        on_release = lambda x, n_event_id=event_id, n_user_id=user_id:self.kick(n_event_id,n_user_id)
                     ),
                     MDRoundFlatButton
                     (
@@ -51,12 +52,19 @@ class AllertDialog():
             self.dialog.open()
     def close_dialog(self,obj):
         self.dialog.dismiss()
-    def kick(self,info,event_id):
-        db.leave_event(event_id,info)
+    def kick(self,event_id,user_id):
+        print("Trying to kick")
+        db.leave_event(event_id,user_id)
+        self.close_dialog(self.dialog)
 class EventDetails(AllertDialog):
     def show_info_dialog(self,title,info,event_id,user_id,use_case):
         global current_chat_room
         current_chat_room=event_id
+        self.new_text=None
+        if db.admin_status(user["_id"],event_id):
+            self.new_text="Delete event"
+        else:
+            self.new_text="Leave"
         print(event_id)
         if use_case=="join":
             self.dialog = MDDialog(
@@ -88,9 +96,9 @@ class EventDetails(AllertDialog):
                         on_release=lambda x, event_id=event_id, user_id=user_id: self.change_room(event_id))
                 ,
                 MDRoundFlatButton(
-                        text="Leave chat room",
+                        text=self.new_text,
                         text_color="orange",
-                        on_release = lambda x, event_id=event_id, user_id=user_id: self.leave_room(event_id,user_id)
+                        on_release = lambda x, event_id=event_id, user_id=user_id: self.leave_room(event_id,user_id,self.new_text)
                         ),
                 MDRoundFlatButton(
                         text="Cancel",
@@ -99,22 +107,29 @@ class EventDetails(AllertDialog):
                         )
                 ]
             )
-        self.dialog.open()
+        self.dialog.open() 
     def change_room(self,event_id):
         print(event_id)
-        self.close_dialog
+        self.close_dialog(self.dialog)
         app=MDApp.get_running_app()
         app.root.current="chatroom"
+        
     def connect_to_event(self,event_id,user_id):
-        self.close_dialog
+        self.close_dialog(self.dialog)
         if(db.connect_to_event(event_id,user_id,"join")):
             self.show_alert_dialog("Success")
         else:
             self.show_alert_dialog("Error")
-    def leave_room(self,event_id,user_id):
-        self.close_dialog
-        db.leave_event(event_id,user_id)
-        self.show_alert_dialog("Chat room left!")
+            
+    def leave_room(self,event_id,user_id, text):
+        self.close_dialog(self.dialog)
+        if text=="Delete event":
+            db.delete_event(event_id)
+            self.show_alert_dialog("Event deleted!")
+        else:
+            db.leave_event(event_id,user_id)
+            self.show_alert_dialog("Chat room left!")
+        
 class Register(MDScreen,AllertDialog):
     dialog=None
     def register(self):
@@ -149,7 +164,7 @@ class Register(MDScreen,AllertDialog):
 class Login(MDScreen,AllertDialog):
     dialog=None
     def on_enter(self):
-        print("ENtering login")
+        print("Entering login")
         with open("user_data.txt","r") as file:
             data=file.read()
             if data:
@@ -206,26 +221,55 @@ class CreateChatRoom(MDScreen,AllertDialog):
         time_dialog=MDTimePicker()
         time_dialog.bind(time=self.get_time)
         time_dialog.open()
-    def create_event(self):
+    def get_desired_data(self):
         global user
         user_id=user['_id']
         event_name=self.ids.event_name.text
-        event_nr=self.ids.event_nr.text
+        try :
+            event_nr=int(self.ids.event_nr.text)
+        except ValueError:
+            self.show_alert_dialog("Invalid data for number the value will be set to 15!")
+            event_nr=15
         event_location=self.ids.location.text
         event_theme=self.ids.theme_spinner.text
         event_date=self.ids.date.text
         event_time=self.ids.time.text
-        if event_name =="" or event_nr=="" or event_location=="" or event_theme=="Select Theme":
+        data=[]
+        data.append(user_id)
+        data.append(event_name)
+        data.append(event_nr)
+        data.append(event_location)
+        data.append(event_theme)
+        data.append(event_date)
+        data.append(event_time)
+        return data
+    def create_event(self):
+        data=self.get_desired_data()
+        user_id=data[0]
+        event_name=data[1]
+        event_nr=data[2]
+        event_location=data[3]
+        event_theme=data[4]
+        event_date=data[5]
+        event_time=data[6]
+        if event_name =="" or event_nr=="" or event_location=="" or event_theme=="Select Theme" or type(event_nr)!=int or event_nr>100 or event_nr<1:
             self.show_alert_dialog("Invalid data!")
         else:
             db.insert_event(user_id,event_name,event_nr,event_location,event_theme,event_date,event_time)
             app=MDApp.get_running_app()
             app.root.current="main"
             self.show_alert_dialog("Event created!")
+    def on_leave(self):
+        self.ids.event_name.text=""
+        self.ids.event_nr.text=""
+        self.ids.location.text=""
+        self.ids.theme_spinner.text="Select Theme"
 class MainPage(MDScreen,EventDetails):
-    event_filter='Choose Event Filter'
-    event_status=None
-    event_attending=None
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.event_filter = 'Choose Event Filter'
+        self.event_status = None
+        self.event_attending = None
     def logout(self):
         global user
         user={}
@@ -239,8 +283,10 @@ class MainPage(MDScreen,EventDetails):
         image = Image.open(io.BytesIO(user['image']))
         image.save('user.png')
         self.ids.user_image.source="user.png"
-        self.load_events(True,"join")	
+        self.load_events(True,"join")
+        Clock.schedule_interval(self.reload_events, 1)	
     def load_events(self,type,use_case,filter="Choose Event Filter"):
+        global user
         events=db.get_events()
         list_view = MDList()
         for event in events:
@@ -287,6 +333,7 @@ class MainPage(MDScreen,EventDetails):
         self.event_attending="join"
     def on_leave(self, *args):
         self.ids.event_box.clear_widgets()
+        Clock.unschedule(self.reload_events)
     def user_action(self,action):
         if action=="Logout":
             self.logout()
@@ -314,24 +361,29 @@ class MainPage(MDScreen,EventDetails):
         db.delete_user(user["_id"])
         self.show_alert_dialog("User deleted!")
         self.logout()
+    def reload_events(self,*args):
+        self.ids.event_box.clear_widgets()
+        self.load_events(self.event_status,self.event_attending,self.event_filter)
+    
 class ChatRoom(MDScreen, EventDetails):
     print(current_chat_room)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.printed_messages = set()
-    
-    def on_enter(self):
-        self.start_message_update()
+    def get_all_members(self):
         self.ids.members.values = []
-        members=db.get_members(current_chat_room)
-        member_name_list=list(members.values())
-        print(type(members))
+        self.members=db.get_members(current_chat_room)
+        member_name_list=list(self.members.values())
+        print(type(self.members))
         global user
         if db.admin_status(user["_id"],current_chat_room):
             member_name_list.append("Delete event")
         else:
             member_name_list.append("Leave")
         self.ids.members.values = member_name_list
+    def on_enter(self):
+        self.start_message_update()
+        self.get_all_members()
         current_event=self.event_details_setter(current_chat_room)
         self.ids.event_text.text=str(current_event["event_name"])+" "+str(current_event["event_location"])+" "+str(current_event["event_date"])+" "+str(current_event["event_time"])
     def start_message_update(self):
@@ -358,7 +410,12 @@ class ChatRoom(MDScreen, EventDetails):
                 text_color= "orange" if userid == user["_id"] else "black",
                 ),
         )
-        print(message)        
+        print(message)
+    def get_key_from_value(self,d,value):
+        for k,v in d.items():
+            if v==value:
+                return k
+        return None        
     def manage_members(self,action):
         if action=="Leave":
             db.leave_event(current_chat_room,user["_id"]) 
@@ -369,14 +426,21 @@ class ChatRoom(MDScreen, EventDetails):
             self.show_alert_dialog("Event deleted!")
             app=MDApp.get_running_app()
             app.root.current="main"
+        elif action=="See members":
+            pass
         elif db.admin_status(user["_id"],current_chat_room):
-            self.kick_dialog(user["_id"],current_chat_room)
-              
+            user_id=self.get_key_from_value(self.members,action)
+            print(str(user_id)+" asta e user id" )
+            self.kick_dialog(action,current_chat_room,user_id)
+        self.get_all_members()     
     def send_message(self):
         global current_chat_room
         text = self.ids.chatbox.text
-        self.ids.chatbox.text = ""
-        db.insert_message(user["_id"], current_chat_room, text)
+        if self.ids.chatbox.text=="":
+            pass
+        else:
+            self.ids.chatbox.text = ""
+            db.insert_message(user["_id"], current_chat_room, text)
         
     def on_leave(self, *args):
         self.printed_messages = set()
@@ -400,6 +464,18 @@ class EditUser(MainPage,Register):
             self.logout()
         else:
             self.show_alert_dialog("Wrong password!")
+class EditEvent(CreateChatRoom,MainPage):
+    global current_chat_room
+    def on_enter(self):
+        event=db.get_event_info(current_chat_room)
+        print(event)
+        self.ids.event_name.text=event["event_name"]
+        self.ids.location.text=event["event_location"]
+        self.ids.date.text=event["event_date"]
+        self.ids.time.text=event["event_time"]
+        self.ids.theme_spinner.text=event["event_theme"]
+        self.ids.event_nr.text=str(event["event_nr"])
+        self.ids.event_name.focus=True
 class MyScreenManager(MDScreenManager):
     pass
 class ChatRiseApp(MDApp):
